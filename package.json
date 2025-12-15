@@ -1,5 +1,5 @@
 {
-  "name": "magi-lp-template",
+  "name": "@aivec/magi-lp-template",
   "version": "0.1.0",
   "description": "LP template components for React - Import design data from Claude and generate landing pages",
   "type": "module",
