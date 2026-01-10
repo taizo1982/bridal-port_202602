@@ -1,31 +1,20 @@
 {
   "name": "@aivec/magi-lp-template",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "LP template components for React - Import design data from Claude and generate landing pages",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    },
-    "./styles.css": "./dist/styles.css",
-    "./tailwind.preset": "./tailwind.preset.js"
-  },
   "files": [
-    "dist",
-    "tailwind.preset.js"
-  ],
-  "sideEffects": [
-    "**/*.css"
+    "design",
+    "docs",
+    "scripts",
+    "src",
+    ".env.example",
+    ".gitignore",
+    "index.html",
+    "tailwind.preset.js",
+    "tsconfig.json",
+    "vite.config.lib.ts",
+    "vite.config.ts"
   ],
   "keywords": [
     "react",
@@ -79,8 +68,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run build:lib",
-    "build:lib": "vite build --config vite.config.lib.ts",
     "build:demo": "npm run optimize:images && vite build && npm run inject:all",
     "optimize:images": "node ./scripts/optimize-images.mjs",
     "convert:images": "node ./scripts/convert-img-to-picture.mjs",
@@ -90,7 +77,6 @@
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir build/server",
     "build:ssg": "npm run build:demo && npm run build:ssr && node ./scripts/prerender.mjs",
     "build:production": "npm run optimize:images && npm run build:ssg",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc --noEmit"
   }
 }
