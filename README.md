@@ -1,11 +1,38 @@
 # MAGI LP Template
 
-Claudeから出力されるTS形式のデザインデータをインポートして、ランディングページを生成できるReactコンポーネントライブラリです。
+ClaudeのAIが生成するTypeScript形式のデザインデータから、ランディングページを動的に生成するReactコンポーネントライブラリです。
+
+## 概要
+
+MAGI LP Templateは、UIコンポーネント、型定義、ユーティリティ関数を含む完全なエコシステムを提供します。Claudeから出力されるデザインデータをそのまま渡すだけで、プロダクションレディなLPを生成できます。
+
+## パッケージ情報
+
+| 項目 | 値 |
+|------|-----|
+| パッケージ名 | `@aivec/magi-lp-template` |
+| バージョン | 1.0.0 |
+| ライセンス | MIT |
+| 出力形式 | ESM (ES2020) + CommonJS |
+
+## 技術スタック
+
+| カテゴリ | 技術 | 用途 |
+|---------|------|------|
+| フレームワーク | React 18/19 | UI構築 |
+| 言語 | TypeScript 5.6+ | 型安全性 |
+| スタイリング | Tailwind CSS 3+ | ユーティリティCSS |
+| UIコンポーネント | Radix UI | アクセシビリティ |
+| アイコン | Lucide React | 40+アイコン |
+| ビルドツール | Vite 6.3.5 | 高速ビルド |
+| トランスパイル | SWC | 高速処理 |
+| 画像最適化 | Sharp | AVIF/WebP変換 |
+| クラス管理 | CVA + tailwind-merge | スタイル合成 |
 
 ## インストール
 
 ```bash
-npm install magi-lp-template
+npm install @aivec/magi-lp-template
 ```
 
 ## 基本的な使い方
@@ -13,14 +40,19 @@ npm install magi-lp-template
 ### 1. デザインデータからLPを生成
 
 ```tsx
-import { LandingPage } from 'magi-lp-template';
-import type { LPDesignData } from 'magi-lp-template';
+import { LandingPage } from '@aivec/magi-lp-template';
+import '@aivec/magi-lp-template/styles.css';
+import type { LPDesignData } from '@aivec/magi-lp-template';
 
 // Claudeから出力されたデザインデータ
 const designData: LPDesignData = {
   meta: {
     title: "イベントLP",
     description: "イベントの説明文",
+  },
+  theme: {
+    primary: "#3b82f6",
+    accent: "#ec4899",
   },
   sections: [
     {
@@ -48,7 +80,7 @@ import {
   PainSection,
   SolutionSection,
   FAQSection,
-} from 'magi-lp-template';
+} from '@aivec/magi-lp-template';
 
 function CustomLP() {
   return (
@@ -67,10 +99,10 @@ function CustomLP() {
 ```js
 // tailwind.config.js
 module.exports = {
-  presets: [require('magi-lp-template/tailwind.preset')],
+  presets: [require('@aivec/magi-lp-template/tailwind.preset')],
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/magi-lp-template/dist/**/*.js',
+    './node_modules/@aivec/magi-lp-template/dist/**/*.js',
   ],
 };
 ```
@@ -95,7 +127,7 @@ module.exports = {
 Claudeから出力されるデザインデータの型定義:
 
 ```typescript
-import type { LPDesignData } from 'magi-lp-template';
+import type { LPDesignData } from '@aivec/magi-lp-template';
 
 const data: LPDesignData = {
   meta: {
@@ -117,24 +149,29 @@ const data: LPDesignData = {
 
 ## 開発
 
-### デモサイトの起動
+### スクリプト
 
-```bash
-npm run dev
-```
+| コマンド | 説明 |
+|---------|------|
+| `npm run dev` | 開発サーバー起動 (ポート3000) |
+| `npm run build` | ライブラリビルド |
+| `npm run build:demo` | デモサイトビルド |
+| `npm run build:ssg` | SSGプリレンダリング |
+| `npm run build:production` | **本番ビルド（推奨）** |
+| `npm run optimize:images` | 画像をAVIF/WebPに変換 |
+| `npm run convert:images` | `<img>`を`<picture>`に変換 |
+| `npm run inject:meta` | OGP/metaタグを注入 |
+| `npm run inject:analytics` | GA/Meta Pixelタグを注入 |
+| `npm run inject:all` | meta + analytics + 画像変換を一括実行 |
+| `npm run typecheck` | TypeScript型チェック |
 
-### ライブラリのビルド
+## ドキュメント
 
-```bash
-npm run build
-```
-
-### デモサイトのビルド（SSG）
-
-```bash
-npm run build:demo
-npm run build:ssg
-```
+- [ワークフロー](./docs/workflow.md) - HTML&CSSからSSG形式への制作フロー
+- [アーキテクチャ](./docs/architecture.md) - プロジェクト構造と設計パターン
+- [型定義](./docs/types.md) - TypeScript型定義の詳細
+- [コンポーネント](./docs/components.md) - セクション・UIコンポーネント一覧
+- [設定](./docs/configuration.md) - 設定ファイルの説明
 
 ## ライセンス
 

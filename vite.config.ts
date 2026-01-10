@@ -1,10 +1,14 @@
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
 
-  import { defineConfig } from 'vite';
-  import react from '@vitejs/plugin-react-swc';
-  import path from 'path';
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  // VITE_BASE_PATH から base を設定（未設定の場合は "./"）
+  const basePath = env.VITE_BASE_PATH || './';
 
-export default defineConfig({
-  base: "./",
+  return {
+    base: basePath,
     plugins: [react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -57,4 +61,5 @@ export default defineConfig({
       port: 3000,
       open: true,
     },
-  });
+  };
+});

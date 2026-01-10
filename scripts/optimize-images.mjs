@@ -1,20 +1,50 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { stat, writeFile } from "fs/promises";
+import { stat, writeFile, readdir } from "fs/promises";
 import sharp from "sharp";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const assetsDir = path.resolve(__dirname, "../src/assets");
 
-const pngImages = [
-  "2927b6ac43f0939a85bca96267f3fa2a187c2bd2.png",
-  "6fe7d929f4abf0a9fc915a7c7ebcc30fcf034131.png",
-  "79b7f76b05327330e4471728394604adcb07148d.png",
-  "7c2373c068f4d4ae4b150044e0aa9c6cbb95cbab.png",
-  "b29d72b932bc03012c283d26e62b9d662d1c5861.png",
-  "c29107eecdbb8d2af774d123974ff110ca535933.png",
+// 対象ディレクトリ（design/, src/assets/, public/）
+const targetDirs = [
+  path.resolve(__dirname, "../design"),
+  path.resolve(__dirname, "../src/assets"),
+  path.resolve(__dirname, "../public"),
 ];
+
+// 対応する画像拡張子
+const imageExtensions = [".png", ".jpg", ".jpeg"];
+
+async function findImages(dir) {
+  const images = [];
+
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        // 再帰的にサブディレクトリを検索
+        const subImages = await findImages(fullPath);
+        images.push(...subImages);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (imageExtensions.includes(ext)) {
+          images.push(fullPath);
+        }
+      }
+    }
+  } catch (error) {
+    // ディレクトリが存在しない場合はスキップ
+    if (error.code !== "ENOENT") {
+      console.warn(`Warning: Could not read directory ${dir}:`, error.message);
+    }
+  }
+
+  return images;
+}
 
 async function needsUpdate(inputPath, outputPath) {
   try {
@@ -32,27 +62,29 @@ async function needsUpdate(inputPath, outputPath) {
   }
 }
 
-async function convertImage(pngFile) {
-  const inputPath = path.join(assetsDir, pngFile);
-  const baseName = pngFile.replace(/\.png$/i, "");
+async function convertImage(imagePath) {
+  const dir = path.dirname(imagePath);
+  const ext = path.extname(imagePath);
+  const baseName = path.basename(imagePath, ext);
 
   const targets = [
     {
       format: "webp",
-      output: path.join(assetsDir, `${baseName}.webp`),
+      output: path.join(dir, `${baseName}.webp`),
       options: { quality: 80 },
     },
     {
       format: "avif",
-      output: path.join(assetsDir, `${baseName}.avif`),
+      output: path.join(dir, `${baseName}.avif`),
       options: { quality: 60 },
     },
   ];
 
-  const image = sharp(inputPath);
+  const image = sharp(imagePath);
+  let converted = false;
 
   for (const target of targets) {
-    if (!(await needsUpdate(inputPath, target.output))) {
+    if (!(await needsUpdate(imagePath, target.output))) {
       continue;
     }
 
@@ -67,13 +99,47 @@ async function convertImage(pngFile) {
 
     await writeFile(target.output, buffer);
     console.log(
-      `Optimized ${pngFile} -> ${path.basename(target.output)} (${target.format})`,
+      `Optimized ${path.relative(process.cwd(), imagePath)} -> ${path.basename(target.output)} (${target.format})`,
     );
+    converted = true;
   }
+
+  return converted;
 }
 
 async function run() {
-  await Promise.all(pngImages.map((png) => convertImage(png)));
+  console.log("Scanning for images...");
+
+  let allImages = [];
+  for (const dir of targetDirs) {
+    const images = await findImages(dir);
+    allImages.push(...images);
+  }
+
+  if (allImages.length === 0) {
+    console.log("No images found to optimize.");
+    return;
+  }
+
+  console.log(`Found ${allImages.length} image(s). Optimizing...`);
+
+  let optimizedCount = 0;
+  for (const imagePath of allImages) {
+    try {
+      const wasConverted = await convertImage(imagePath);
+      if (wasConverted) {
+        optimizedCount++;
+      }
+    } catch (error) {
+      console.error(`Error optimizing ${imagePath}:`, error.message);
+    }
+  }
+
+  if (optimizedCount > 0) {
+    console.log(`Done! Optimized ${optimizedCount} image(s).`);
+  } else {
+    console.log("All images are up to date.");
+  }
 }
 
 run().catch((error) => {

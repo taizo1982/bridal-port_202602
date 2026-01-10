@@ -1,6 +1,6 @@
 {
   "name": "@aivec/magi-lp-template",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "LP template components for React - Import design data from Claude and generate landing pages",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -81,10 +81,15 @@
     "dev": "vite",
     "build": "npm run build:lib",
     "build:lib": "vite build --config vite.config.lib.ts",
-    "build:demo": "npm run optimize:images && vite build && node ./scripts/inject-analytics-html.mjs",
+    "build:demo": "npm run optimize:images && vite build && npm run inject:all",
     "optimize:images": "node ./scripts/optimize-images.mjs",
+    "convert:images": "node ./scripts/convert-img-to-picture.mjs",
+    "inject:meta": "node ./scripts/inject-meta-html.mjs",
+    "inject:analytics": "node ./scripts/inject-analytics-html.mjs",
+    "inject:all": "npm run inject:meta && npm run inject:analytics && npm run convert:images",
     "build:ssr": "vite build --ssr src/entry-server.tsx --outDir build/server",
     "build:ssg": "npm run build:demo && npm run build:ssr && node ./scripts/prerender.mjs",
+    "build:production": "npm run optimize:images && npm run build:ssg",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   }

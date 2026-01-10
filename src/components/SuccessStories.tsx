@@ -1,5 +1,5 @@
 import { Card, CardContent } from "./ui/card";
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { ImageWithFallback } from "./ui/image-with-fallback";
 import { Quote } from "lucide-react";
 
 const stories = [
