@@ -46,6 +46,11 @@ img {
   display: block;
 }
 
+/* Picture element reset for build optimization */
+picture {
+  display: contents;
+}
+
 a {
   color: inherit;
   text-decoration: none;
