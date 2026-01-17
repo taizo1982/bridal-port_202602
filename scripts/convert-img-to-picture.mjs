@@ -111,21 +111,8 @@ async function run() {
     }
   }
 
-  // design/内のHTMLファイルも処理
-  const designDir = path.resolve(projectRoot, "design");
-  try {
-    const designFiles = await findHtmlFiles(designDir);
-    for (const filePath of designFiles) {
-      const wasConverted = await processFile(filePath);
-      if (wasConverted) {
-        convertedCount++;
-      }
-    }
-  } catch (error) {
-    if (error.code !== "ENOENT") {
-      console.warn("Warning: Could not process design directory:", error.message);
-    }
-  }
+  // NOTE: design/はソース参照用のため、ビルド時に変更しない
+  // Reactコンポーネントで直接pictureタグを実装済み
 
   if (convertedCount > 0) {
     console.log(`Done! Converted ${convertedCount} file(s).`);
