@@ -210,113 +210,189 @@ function generateAnalyticsTags(env) {
   return tags.join("\n");
 }
 
-// 構造化データを生成
-function generateStructuredData(env, html) {
-  const type = env.STRUCTURED_DATA_TYPE;
-  if (!type) return "";
+// JSON-LD用のエスケープ処理（XSS対策）
+function escapeJsonLd(obj) {
+  const json = JSON.stringify(obj);
+  return json.replace(/<\//g, "<\\/");
+}
 
-  let data = null;
-
-  switch (type.toLowerCase()) {
-    case "event":
-      data = {
+// 単一タイプの構造化データを生成
+function generateSingleStructuredData(type, env, html) {
+  switch (type.toLowerCase().trim()) {
+    case "event": {
+      const name = env.SITE_TITLE;
+      if (!name) {
+        console.warn("Event structured data requires SITE_TITLE");
+        return null;
+      }
+      return {
         "@context": "https://schema.org",
         "@type": "Event",
-        name: env.SITE_TITLE || "",
-        description: env.SITE_DESCRIPTION || "",
-        startDate: env.EVENT_START_DATE || "",
-        endDate: env.EVENT_END_DATE || "",
-        location: {
-          "@type": "Place",
-          name: env.EVENT_LOCATION_NAME || "",
-          address: env.EVENT_LOCATION_ADDRESS || "",
-        },
-        offers: {
-          "@type": "Offer",
-          price: env.EVENT_PRICE || "0",
-          priceCurrency: "JPY",
-          availability: "https://schema.org/InStock",
-          url: env.OG_URL || "",
-        },
-        organizer: {
-          "@type": "Organization",
-          name: env.OG_SITE_NAME || "",
-        },
+        name,
+        ...(env.SITE_DESCRIPTION && { description: env.SITE_DESCRIPTION }),
+        ...(env.EVENT_START_DATE && { startDate: env.EVENT_START_DATE }),
+        ...(env.EVENT_END_DATE && { endDate: env.EVENT_END_DATE }),
+        ...((env.EVENT_LOCATION_NAME || env.EVENT_LOCATION_ADDRESS) && {
+          location: {
+            "@type": "Place",
+            ...(env.EVENT_LOCATION_NAME && { name: env.EVENT_LOCATION_NAME }),
+            ...(env.EVENT_LOCATION_ADDRESS && { address: env.EVENT_LOCATION_ADDRESS }),
+          },
+        }),
+        ...(env.EVENT_PRICE && {
+          offers: {
+            "@type": "Offer",
+            price: env.EVENT_PRICE,
+            priceCurrency: "JPY",
+            availability: "https://schema.org/InStock",
+            ...(env.OG_URL && { url: env.OG_URL }),
+          },
+        }),
+        ...(env.OG_SITE_NAME && {
+          organizer: {
+            "@type": "Organization",
+            name: env.OG_SITE_NAME,
+          },
+        }),
       };
-      break;
+    }
 
-    case "product":
-      data = {
+    case "product": {
+      const name = env.PRODUCT_NAME || env.SITE_TITLE;
+      if (!name) {
+        console.warn("Product structured data requires PRODUCT_NAME or SITE_TITLE");
+        return null;
+      }
+      return {
         "@context": "https://schema.org",
         "@type": "Product",
-        name: env.SITE_TITLE || "",
-        description: env.SITE_DESCRIPTION || "",
-        image: env.OG_IMAGE_URL || "",
-        offers: {
-          "@type": "Offer",
-          price: env.PRODUCT_PRICE || "0",
-          priceCurrency: "JPY",
-          availability: "https://schema.org/InStock",
-        },
+        name,
+        ...(env.SITE_DESCRIPTION && { description: env.SITE_DESCRIPTION }),
+        ...(env.OG_IMAGE_URL && { image: env.OG_IMAGE_URL }),
+        ...(env.PRODUCT_BRAND && { brand: env.PRODUCT_BRAND }),
+        ...(env.PRODUCT_PRICE && {
+          offers: {
+            "@type": "Offer",
+            price: env.PRODUCT_PRICE,
+            priceCurrency: env.PRODUCT_CURRENCY || "JPY",
+            availability: env.PRODUCT_AVAILABILITY || "https://schema.org/InStock",
+          },
+        }),
       };
-      break;
+    }
 
-    case "localbusiness":
-      data = {
+    case "localbusiness": {
+      const name = env.BUSINESS_NAME || env.OG_SITE_NAME;
+      if (!name) {
+        console.warn("LocalBusiness structured data requires BUSINESS_NAME or OG_SITE_NAME");
+        return null;
+      }
+      const address = env.BUSINESS_ADDRESS;
+      const city = env.BUSINESS_CITY;
+      return {
         "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        name: env.OG_SITE_NAME || "",
-        description: env.SITE_DESCRIPTION || "",
-        image: env.OG_IMAGE_URL || "",
-        telephone: env.BUSINESS_PHONE || "",
-        address: {
-          "@type": "PostalAddress",
-          streetAddress: env.BUSINESS_ADDRESS || "",
-        },
+        "@type": env.BUSINESS_TYPE || "LocalBusiness",
+        name,
+        ...(env.SITE_DESCRIPTION && { description: env.SITE_DESCRIPTION }),
+        ...(env.BUSINESS_IMAGE_URL || env.OG_IMAGE_URL
+          ? { image: env.BUSINESS_IMAGE_URL || env.OG_IMAGE_URL }
+          : {}),
+        ...(env.BUSINESS_PHONE && { telephone: env.BUSINESS_PHONE }),
+        ...(env.BUSINESS_URL || env.OG_URL
+          ? { url: env.BUSINESS_URL || env.OG_URL }
+          : {}),
+        ...(env.BUSINESS_PRICE_RANGE && { priceRange: env.BUSINESS_PRICE_RANGE }),
+        // addressとcityが両方存在する場合のみPostalAddressを生成
+        ...(address && city && {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: address,
+            addressLocality: city,
+            ...(env.BUSINESS_REGION && { addressRegion: env.BUSINESS_REGION }),
+            ...(env.BUSINESS_POSTAL_CODE && { postalCode: env.BUSINESS_POSTAL_CODE }),
+            addressCountry: env.BUSINESS_COUNTRY || "JP",
+          },
+        }),
       };
-      break;
+    }
 
-    case "organization":
-      data = {
+    case "organization": {
+      const name = env.ORG_NAME || env.OG_SITE_NAME;
+      const url = env.ORG_URL || env.OG_URL;
+      if (!name || !url) {
+        console.warn("Organization structured data requires name and url");
+        return null;
+      }
+      return {
         "@context": "https://schema.org",
         "@type": "Organization",
-        name: env.OG_SITE_NAME || "",
-        url: env.OG_URL || "",
-        logo: env.OG_IMAGE_URL || "",
-        description: env.SITE_DESCRIPTION || "",
+        name,
+        url,
+        ...(env.ORG_LOGO_URL || env.OG_IMAGE_URL
+          ? { logo: env.ORG_LOGO_URL || env.OG_IMAGE_URL }
+          : {}),
+        ...(env.ORG_DESCRIPTION || env.SITE_DESCRIPTION
+          ? { description: env.ORG_DESCRIPTION || env.SITE_DESCRIPTION }
+          : {}),
+        ...(env.ORG_EMAIL && { email: env.ORG_EMAIL }),
+        ...(env.ORG_PHONE && { telephone: env.ORG_PHONE }),
       };
-      break;
+    }
 
-    case "faqpage":
+    case "faqpage": {
       // FAQをHTMLから抽出
       const faqItems = [];
       const faqRegex = /<summary[^>]*>([\s\S]*?)<\/summary>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/gi;
       let match;
       while ((match = faqRegex.exec(html)) !== null) {
-        faqItems.push({
-          "@type": "Question",
-          name: match[1].trim(),
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: match[2].trim(),
-          },
-        });
+        const question = match[1].trim();
+        const answer = match[2].trim();
+        if (question && answer) {
+          faqItems.push({
+            "@type": "Question",
+            name: question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: answer,
+            },
+          });
+        }
       }
       if (faqItems.length > 0) {
-        data = {
+        return {
           "@context": "https://schema.org",
           "@type": "FAQPage",
           mainEntity: faqItems,
         };
       }
-      break;
+      return null;
+    }
+
+    default:
+      console.warn(`Unknown structured data type: ${type}`);
+      return null;
+  }
+}
+
+// 構造化データを生成（複数タイプ対応）
+function generateStructuredData(env, html) {
+  const typeString = env.STRUCTURED_DATA_TYPE;
+  if (!typeString) return "";
+
+  // カンマ区切りで分割して複数タイプに対応
+  const types = typeString.split(",").map((t) => t.trim()).filter(Boolean);
+  if (types.length === 0) return "";
+
+  const scripts = [];
+
+  for (const type of types) {
+    const data = generateSingleStructuredData(type, env, html);
+    if (data) {
+      scripts.push(`<script type="application/ld+json">${escapeJsonLd(data)}</script>`);
+    }
   }
 
-  if (data) {
-    return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
-  }
-
-  return "";
+  return scripts.join("\n");
 }
 
 // コンバージョン追跡コードを生成
