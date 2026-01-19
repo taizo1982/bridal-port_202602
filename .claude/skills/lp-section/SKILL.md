@@ -31,8 +31,11 @@ allowed-tools: Read, Edit, Write, Skill
 
 1. 追加したいセクション名を指定
 2. 必要な情報をヒアリング
-3. src/index.html に追加
-4. src/style.css にスタイル追加
+3. **画像を使う場合は先に確認**（特にhero、testimonials）
+   - Readツールで画像を読み込む
+   - 人物写真なら顔の位置を確認
+4. src/index.html に追加
+5. src/style.css にスタイル追加
 
 ## セクションテンプレート例
 
@@ -85,3 +88,38 @@ allowed-tools: Read, Edit, Write, Skill
 - 既存のスタイルとの整合性を確認
 - セクションの順序を考慮（ストーリー性）
 - CTAボタンには data-cv 属性を付与
+- `/frontend-design` 使用時は日本語ルールを渡す（下記参照）
+
+## 日本語LP追加ルール
+
+`/frontend-design` 呼び出し時、以下を追加指示として含める：
+
+- **孤立文字回避**: 375pxで1-2文字だけ行末に残らない
+- **行間**: line-height: 1.8〜2.0
+- **文字間**: letter-spacing: 0.05em
+- **フォント**: 游ゴシック、Noto Sans JP、ヒラギノ角ゴ
+- **1行**: 25〜35文字程度
+
+## 画像配置ルール
+
+人物写真を使う場合、**顔にコンテンツを被せない**:
+
+| 顔の位置 | テキスト配置 |
+|---------|-------------|
+| 右側 | 左配置 |
+| 左側 | 右配置 |
+| 中央 | 上下配置 or 半透明オーバーレイ |
+
+```css
+/* 顔が右の場合 */
+.hero-content {
+  max-width: 50%;
+  margin-right: auto;
+}
+
+/* 顔が左の場合 */
+.hero-content {
+  max-width: 50%;
+  margin-left: auto;
+}
+```
