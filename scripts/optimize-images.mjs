@@ -17,8 +17,8 @@ const __dirname = path.dirname(__filename);
 // 設定
 const MAX_WIDTH = 1920;
 const targetDirs = [
-  path.resolve(__dirname, "../design"),
-  path.resolve(__dirname, "../design/images"),
+  path.resolve(__dirname, "../src"),
+  path.resolve(__dirname, "../src/images"),
 ];
 const imageExtensions = [".png", ".jpg", ".jpeg"];
 

@@ -6,7 +6,7 @@ allowed-tools: Write, Read, Edit, Bash, Skill
 
 # LP新規作成スキル
 
-design/ ディレクトリに新しいランディングページを作成します。
+src/ ディレクトリに新しいランディングページを作成します。
 
 **重要**: デザイン作成時は必ず `/frontend-design` スキルを使用してください。
 
@@ -53,7 +53,7 @@ design/ ディレクトリに新しいランディングページを作成しま
 ## 出力ファイル
 
 ```
-design/
+src/
 ├── index.html    # HTML構造
 ├── style.css     # スタイル
 ├── script.js     # インタラクション
@@ -91,7 +91,7 @@ design/
 
 1. ヒアリングで要件を確認
 2. `/frontend-design` スキルを呼び出してデザイン作成
-3. design/ に HTML/CSS/JS を出力
+3. src/ に HTML/CSS/JS を出力
 
 ## 完了後の案内
 

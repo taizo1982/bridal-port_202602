@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const designDir = path.resolve(projectRoot, "design");
+const srcDir = path.resolve(projectRoot, "src");
 
 // コントラスト比を計算
 function getLuminance(r, g, b) {
@@ -48,7 +48,7 @@ async function checkAccessibility() {
   const warnings = [];
 
   // HTML をチェック
-  const htmlPath = path.join(designDir, "index.html");
+  const htmlPath = path.join(srcDir, "index.html");
   const html = await fs.readFile(htmlPath, "utf-8");
 
   // 1. lang属性
@@ -79,7 +79,7 @@ async function checkAccessibility() {
 
   // 3. タップ領域（a, button要素）
   // CSSを解析してサイズを確認（簡易チェック）
-  const cssPath = path.join(designDir, "style.css");
+  const cssPath = path.join(srcDir, "style.css");
   const css = await fs.readFile(cssPath, "utf-8");
 
   // min-width, min-height, padding をチェック

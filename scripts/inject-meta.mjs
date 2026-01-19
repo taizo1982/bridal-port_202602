@@ -1,7 +1,8 @@
 /**
  * LP Template - OGP/metaタグ注入スクリプト
  *
- * design/index.html に .env の設定からOGP/metaタグを注入
+ * build/index.html に .env の設定からOGP/metaタグを注入
+ * ※ src/ はビルド中に変更しない（元データを保持）
  */
 
 import fs from "node:fs/promises";
@@ -132,13 +133,22 @@ async function injectMeta(targetPath) {
 
 // メイン処理
 async function main() {
-  const targetPath = process.argv[2] || path.resolve(projectRoot, "design", "index.html");
+  const targetPath = process.argv[2] || path.resolve(projectRoot, "build", "index.html");
+  const resolvedPath = path.resolve(targetPath);
+  const srcPath = path.resolve(projectRoot, "src");
+
+  // src/ への書き込みを防止
+  if (resolvedPath.startsWith(srcPath)) {
+    console.error("✗ src/ フォルダは変更できません。build/ を使用してください。");
+    process.exit(1);
+  }
 
   try {
     await fs.access(targetPath);
     await injectMeta(targetPath);
   } catch (error) {
     console.error(`✗ ファイルが見つかりません: ${targetPath}`);
+    console.error("  先に npm run build を実行してください。");
     process.exit(1);
   }
 }

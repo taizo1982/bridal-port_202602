@@ -96,7 +96,7 @@ https://pagespeed.web.dev/
 ## 問題があった場合
 
 1. 問題を特定
-2. design/ のファイルを修正
+2. src/ のファイルを修正
 3. 再度 `/lp-build` を実行
 4. 再検証
 

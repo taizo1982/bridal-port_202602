@@ -31,8 +31,8 @@ allowed-tools: Read, Edit, Write, Skill
 
 1. 追加したいセクション名を指定
 2. 必要な情報をヒアリング
-3. design/index.html に追加
-4. design/style.css にスタイル追加
+3. src/index.html に追加
+4. src/style.css にスタイル追加
 
 ## セクションテンプレート例
 

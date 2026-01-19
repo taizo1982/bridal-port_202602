@@ -64,7 +64,7 @@ TRACK_TIME_ON_PAGE=30,60,180
 
 ## コンバージョン設定
 
-design/index.html の CTA に data-cv 属性があることを確認：
+src/index.html の CTA に data-cv 属性があることを確認：
 
 ```html
 <!-- ボタンクリック -->

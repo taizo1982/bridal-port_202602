@@ -16,12 +16,12 @@
 
 ---
 
-## デザイナー向け
+## ソース構造
 
-### 作業フォルダ
+### ファイル構成
 
 ```
-design/
+src/
 ├── index.html   # HTML編集
 ├── style.css    # CSS編集
 ├── script.js    # JS編集（必要なら）
@@ -120,7 +120,7 @@ npm run build
 
 ### ビルド処理内容
 
-1. design/ → build/ コピー
+1. src/ → build/ コピー
 2. 画像リサイズ（1920px以下）
 3. AVIF/WebP 生成
 4. width/height 自動付与
@@ -139,14 +139,15 @@ npm run build
 # 画像最適化のみ
 node scripts/optimize-images.mjs
 
+# ビルド後に個別注入（通常はnpm run buildで全て実行）
 # OGP注入のみ
-node scripts/inject-meta.mjs design/index.html
+node scripts/inject-meta.mjs build/index.html
 
 # 広告タグ注入のみ
-node scripts/inject-analytics.mjs design/index.html
+node scripts/inject-analytics.mjs build/index.html
 
 # CV追跡コード注入のみ
-node scripts/inject-conversion.mjs design/script.js
+node scripts/inject-conversion.mjs build/script.js
 ```
 
 ### 品質チェック
@@ -191,7 +192,7 @@ API制限緩和: `.env` に `PAGESPEED_API_KEY` を設定
 
 ```
 lp-template/
-├── design/                 # デザイン作業フォルダ
+├── src/                    # ソースファイル
 │   ├── index.html
 │   ├── style.css
 │   ├── script.js

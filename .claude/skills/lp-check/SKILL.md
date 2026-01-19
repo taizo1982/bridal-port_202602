@@ -6,7 +6,7 @@ allowed-tools: Bash, Read
 
 # LP品質チェックスキル
 
-design/ のLPをチェックして問題を報告します。
+src/ のLPをチェックして問題を報告します。
 
 ## チェック項目
 

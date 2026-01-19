@@ -1,8 +1,9 @@
 /**
  * LP Template - 広告タグ注入スクリプト
  *
- * design/index.html に .env の設定から広告タグを注入
+ * build/index.html に .env の設定から広告タグを注入
  * GA4, Google Ads, Meta Pixel, LINE Tag, Yahoo Tag 対応
+ * ※ src/ はビルド中に変更しない（元データを保持）
  */
 
 import fs from "node:fs/promises";
@@ -113,13 +114,22 @@ async function injectAnalytics(targetPath) {
 
 // メイン処理
 async function main() {
-  const targetPath = process.argv[2] || path.resolve(projectRoot, "design", "index.html");
+  const targetPath = process.argv[2] || path.resolve(projectRoot, "build", "index.html");
+  const resolvedPath = path.resolve(targetPath);
+  const srcPath = path.resolve(projectRoot, "src");
+
+  // src/ への書き込みを防止
+  if (resolvedPath.startsWith(srcPath)) {
+    console.error("✗ src/ フォルダは変更できません。build/ を使用してください。");
+    process.exit(1);
+  }
 
   try {
     await fs.access(targetPath);
     await injectAnalytics(targetPath);
   } catch (error) {
     console.error(`✗ ファイルが見つかりません: ${targetPath}`);
+    console.error("  先に npm run build を実行してください。");
     process.exit(1);
   }
 }

@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const designPath = path.resolve(projectRoot, "design", "index.html");
+const srcPath = path.resolve(projectRoot, "src", "index.html");
 
 async function checkTypography() {
   console.log("Checking typography at 375px...\n");
@@ -23,7 +23,7 @@ async function checkTypography() {
   await page.setViewport({ width: 375, height: 812 });
 
   // ローカルファイルを開く
-  await page.goto(`file://${designPath}`, { waitUntil: "networkidle0" });
+  await page.goto(`file://${srcPath}`, { waitUntil: "networkidle0" });
 
   // テキスト要素をチェック
   const issues = await page.evaluate(() => {

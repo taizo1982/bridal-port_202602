@@ -1,7 +1,8 @@
 /**
  * LP Template - メインビルドスクリプト
  *
- * design/ の内容を最適化して build/ に出力
+ * src/ の内容を最適化して build/ に出力
+ * ※ src/ は読み取り専用（変更しない）
  *
  * 機能:
  * - 画像最適化（リサイズ、AVIF/WebP変換）
@@ -13,7 +14,8 @@
  * - コンバージョンコード注入
  * - 構造化データ生成
  * - favicon生成
- * - HTML/CSS/JS minify
+ * - HTML/CSS minify
+ * - JS トランスパイル（ES6+ → ES5）+ minify
  */
 
 import fs from "node:fs/promises";
@@ -23,11 +25,12 @@ import { minify as minifyHtml } from "html-minifier-terser";
 import CleanCSS from "clean-css";
 import { minify as minifyJs } from "terser";
 import sharp from "sharp";
+import * as babel from "@babel/core";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const designDir = path.resolve(projectRoot, "design");
+const srcDir = path.resolve(projectRoot, "src");
 const buildDir = path.resolve(projectRoot, "build");
 
 // 環境変数の読み込み
@@ -539,8 +542,8 @@ async function processImages(html, dimensions) {
 }
 
 // favicon生成
-async function generateFavicons(designDir, buildDir) {
-  const faviconSrc = path.join(designDir, "images", "favicon.png");
+async function generateFavicons(srcDir, buildDir) {
+  const faviconSrc = path.join(srcDir, "images", "favicon.png");
 
   try {
     await fs.access(faviconSrc);
@@ -584,7 +587,7 @@ async function optimizeCss(filePath) {
   return result.styles;
 }
 
-// JSを最適化
+// JSを最適化（トランスパイル + ミニファイ）
 async function optimizeJs(filePath, env) {
   let js = await fs.readFile(filePath, "utf-8");
 
@@ -595,7 +598,22 @@ async function optimizeJs(filePath, env) {
   const conversionCode = generateConversionCode(env);
   js = js.trim() + "\n\n" + conversionCode;
 
-  const result = await minifyJs(js, { compress: true, mangle: true });
+  // Babel でトランスパイル（ES6+ → ES5）
+  const transpiled = await babel.transformAsync(js, {
+    presets: [
+      [
+        "@babel/preset-env",
+        {
+          targets: "> 0.5%, last 2 versions, not dead, IE 11",
+          useBuiltIns: false, // ポリフィルは別途必要な場合のみ追加
+        },
+      ],
+    ],
+    compact: false,
+  });
+
+  // Terser でミニファイ
+  const result = await minifyJs(transpiled.code, { compress: true, mangle: true });
   return result.code;
 }
 
@@ -611,7 +629,7 @@ async function build() {
   await fs.mkdir(buildDir, { recursive: true });
 
   // images/ をコピー
-  const imagesDir = path.join(designDir, "images");
+  const imagesDir = path.join(srcDir, "images");
   try {
     await fs.access(imagesDir);
     await copyDir(imagesDir, path.join(buildDir, "images"));
@@ -623,13 +641,13 @@ async function build() {
   // Favicon生成
   let faviconTags = "";
   try {
-    faviconTags = await generateFavicons(designDir, buildDir);
+    faviconTags = await generateFavicons(srcDir, buildDir);
   } catch (error) {
     console.log(`  Favicon generation skipped: ${error.message}`);
   }
 
   // HTML処理
-  const htmlPath = path.join(designDir, "index.html");
+  const htmlPath = path.join(srcDir, "index.html");
   try {
     let html = await fs.readFile(htmlPath, "utf-8");
 
@@ -683,7 +701,7 @@ async function build() {
   }
 
   // CSS処理
-  const cssPath = path.join(designDir, "style.css");
+  const cssPath = path.join(srcDir, "style.css");
   try {
     const css = await optimizeCss(cssPath);
     await fs.writeFile(path.join(buildDir, "style.min.css"), css);
@@ -693,11 +711,11 @@ async function build() {
   }
 
   // JS処理
-  const jsPath = path.join(designDir, "script.js");
+  const jsPath = path.join(srcDir, "script.js");
   try {
     const js = await optimizeJs(jsPath, env);
     await fs.writeFile(path.join(buildDir, "script.min.js"), js);
-    console.log("✓ JS optimized (with conversion tracking)");
+    console.log("✓ JS optimized (transpiled + minified)");
   } catch (error) {
     console.error("✗ JS optimization failed:", error.message);
   }

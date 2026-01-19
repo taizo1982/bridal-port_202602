@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
-const designDir = path.resolve(projectRoot, "design");
+const srcDir = path.resolve(projectRoot, "src");
 
 async function checkLinks() {
   console.log("Checking links...\n");
@@ -22,7 +22,7 @@ async function checkLinks() {
   const warnings = [];
 
   // HTML を読み込み
-  const htmlPath = path.join(designDir, "index.html");
+  const htmlPath = path.join(srcDir, "index.html");
   const html = await fs.readFile(htmlPath, "utf-8");
 
   // 1. 内部アンカーリンクのチェック
@@ -65,7 +65,7 @@ async function checkLinks() {
     }
 
     // 相対パスのチェック
-    const imagePath = path.join(designDir, src);
+    const imagePath = path.join(srcDir, src);
     try {
       await fs.access(imagePath);
     } catch {
@@ -81,7 +81,7 @@ async function checkLinks() {
   for (const link of cssLinks) {
     const href = link.match(/href=["']([^"']+)["']/i)[1];
     if (!href.startsWith("http")) {
-      const cssPath = path.join(designDir, href);
+      const cssPath = path.join(srcDir, href);
       try {
         await fs.access(cssPath);
       } catch {
@@ -98,7 +98,7 @@ async function checkLinks() {
   for (const link of jsLinks) {
     const src = link.match(/src=["']([^"']+)["']/i)[1];
     if (!src.startsWith("http")) {
-      const jsPath = path.join(designDir, src);
+      const jsPath = path.join(srcDir, src);
       try {
         await fs.access(jsPath);
       } catch {

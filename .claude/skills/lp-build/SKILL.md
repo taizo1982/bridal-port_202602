@@ -6,7 +6,7 @@ allowed-tools: Bash, Read
 
 # LP本番ビルドスキル
 
-design/ の内容を最適化して build/ に出力します。
+src/ の内容を最適化して build/ に出力します。
 
 ## ビルドプロセス
 
