@@ -223,16 +223,21 @@ function escapeJsonLd(obj) {
 function generateSingleStructuredData(type, env, html) {
   switch (type.toLowerCase().trim()) {
     case "event": {
-      const name = env.SITE_TITLE;
+      const name = env.EVENT_NAME || env.SITE_TITLE;
       if (!name) {
-        console.warn("Event structured data requires SITE_TITLE");
+        console.warn("Event structured data requires EVENT_NAME or SITE_TITLE");
         return null;
       }
       return {
         "@context": "https://schema.org",
         "@type": "Event",
         name,
-        ...(env.SITE_DESCRIPTION && { description: env.SITE_DESCRIPTION }),
+        ...(env.EVENT_DESCRIPTION || env.SITE_DESCRIPTION
+          ? { description: env.EVENT_DESCRIPTION || env.SITE_DESCRIPTION }
+          : {}),
+        ...(env.EVENT_IMAGE_URL || env.OG_IMAGE_URL
+          ? { image: env.EVENT_IMAGE_URL || env.OG_IMAGE_URL }
+          : {}),
         ...(env.EVENT_START_DATE && { startDate: env.EVENT_START_DATE }),
         ...(env.EVENT_END_DATE && { endDate: env.EVENT_END_DATE }),
         ...((env.EVENT_LOCATION_NAME || env.EVENT_LOCATION_ADDRESS) && {
@@ -242,13 +247,21 @@ function generateSingleStructuredData(type, env, html) {
             ...(env.EVENT_LOCATION_ADDRESS && { address: env.EVENT_LOCATION_ADDRESS }),
           },
         }),
-        ...(env.EVENT_PRICE && {
+        ...(env.EVENT_OFFER_PRICE && {
           offers: {
             "@type": "Offer",
-            price: env.EVENT_PRICE,
-            priceCurrency: "JPY",
+            price: env.EVENT_OFFER_PRICE,
+            priceCurrency: env.EVENT_OFFER_CURRENCY || "JPY",
             availability: "https://schema.org/InStock",
-            ...(env.OG_URL && { url: env.OG_URL }),
+            ...(env.EVENT_OFFER_URL || env.OG_URL
+              ? { url: env.EVENT_OFFER_URL || env.OG_URL }
+              : {}),
+          },
+        }),
+        ...(env.EVENT_PERFORMER && {
+          performer: {
+            "@type": "Person",
+            name: env.EVENT_PERFORMER,
           },
         }),
         ...(env.OG_SITE_NAME && {
@@ -490,8 +503,10 @@ function generateConversionCode(env) {
 }
 
 // width/height自動付与 + lazy loading + <picture>変換
-async function processImages(html, dimensions) {
+async function processImages(html, dimensions, basePath = "") {
   let imageIndex = 0;
+  // BASE_PATHを正規化（末尾スラッシュを除去、先頭スラッシュを確保）
+  const prefix = basePath ? basePath.replace(/\/$/, "") : "";
 
   // <img>タグを処理
   const imgRegex = /<img([^>]*)src=["']([^"']+)["']([^>]*)>/gi;
@@ -528,11 +543,20 @@ async function processImages(html, dimensions) {
     const ext = path.extname(src).toLowerCase();
     if ([".png", ".jpg", ".jpeg"].includes(ext)) {
       const baseName = src.replace(/\.(png|jpe?g)$/i, "");
+      // 相対パスの場合はBASE_PATHを適用
+      const imgPrefix = src.startsWith("/") || src.startsWith("http") ? "" : prefix ? `${prefix}/` : "";
+      const srcWithPrefix = src.startsWith("/") || src.startsWith("http") ? src : `${imgPrefix}${src}`;
+      const baseNameWithPrefix = src.startsWith("/") || src.startsWith("http") ? baseName : `${imgPrefix}${baseName}`;
       return `<picture>
-  <source srcset="${baseName}.avif" type="image/avif">
-  <source srcset="${baseName}.webp" type="image/webp">
-  <img${newBefore}src="${src}"${newAfter}>
+  <source srcset="${baseNameWithPrefix}.avif" type="image/avif">
+  <source srcset="${baseNameWithPrefix}.webp" type="image/webp">
+  <img${newBefore}src="${srcWithPrefix}"${newAfter}>
 </picture>`;
+    }
+
+    // 相対パスの場合はBASE_PATHを適用
+    if (!src.startsWith("/") && !src.startsWith("http") && prefix) {
+      return `<img${newBefore}src="${prefix}/${src}"${newAfter}>`;
     }
 
     return `<img${newBefore}src="${src}"${newAfter}>`;
@@ -542,7 +566,7 @@ async function processImages(html, dimensions) {
 }
 
 // favicon生成
-async function generateFavicons(srcDir, buildDir) {
+async function generateFavicons(srcDir, buildDir, basePath = "") {
   const faviconSrc = path.join(srcDir, "images", "favicon.png");
 
   try {
@@ -571,10 +595,13 @@ async function generateFavicons(srcDir, buildDir) {
   const icoPath = path.join(buildDir, "favicon.ico");
   await sharp(faviconSrc).resize(32, 32).toFile(icoPath);
 
-  faviconTags.push(`<link rel="icon" type="image/x-icon" href="/favicon.ico">`);
-  faviconTags.push(`<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">`);
-  faviconTags.push(`<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">`);
-  faviconTags.push(`<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`);
+  // BASE_PATHを適用（末尾スラッシュを正規化）
+  const prefix = basePath ? basePath.replace(/\/$/, "") : "";
+
+  faviconTags.push(`<link rel="icon" type="image/x-icon" href="${prefix}/favicon.ico">`);
+  faviconTags.push(`<link rel="icon" type="image/png" sizes="16x16" href="${prefix}/favicon-16x16.png">`);
+  faviconTags.push(`<link rel="icon" type="image/png" sizes="32x32" href="${prefix}/favicon-32x32.png">`);
+  faviconTags.push(`<link rel="apple-touch-icon" sizes="180x180" href="${prefix}/apple-touch-icon.png">`);
 
   console.log("✓ Favicon generated");
   return `<!-- Favicon -->\n${faviconTags.join("\n")}`;
@@ -624,6 +651,12 @@ async function build() {
   const env = await loadEnv();
   const dimensions = await loadImageDimensions();
 
+  // BASE_PATHを取得（末尾スラッシュを除去）
+  const basePath = env.BASE_PATH ? env.BASE_PATH.replace(/\/$/, "") : "";
+  if (basePath) {
+    console.log(`Using BASE_PATH: ${basePath}`);
+  }
+
   // build/ をクリア
   await fs.rm(buildDir, { recursive: true, force: true });
   await fs.mkdir(buildDir, { recursive: true });
@@ -641,7 +674,7 @@ async function build() {
   // Favicon生成
   let faviconTags = "";
   try {
-    faviconTags = await generateFavicons(srcDir, buildDir);
+    faviconTags = await generateFavicons(srcDir, buildDir, basePath);
   } catch (error) {
     console.log(`  Favicon generation skipped: ${error.message}`);
   }
@@ -676,11 +709,13 @@ async function build() {
     }
 
     // 画像処理（width/height、lazy loading、picture変換）
-    html = await processImages(html, dimensions);
+    html = await processImages(html, dimensions, basePath);
 
-    // CSS/JSリンクを更新
-    html = html.replace('href="style.css"', 'href="style.min.css"');
-    html = html.replace('src="script.js"', 'src="script.min.js"');
+    // CSS/JSリンクを更新（BASE_PATHを適用）
+    const cssHref = basePath ? `${basePath}/style.min.css` : "style.min.css";
+    const jsHref = basePath ? `${basePath}/script.min.js` : "script.min.js";
+    html = html.replace('href="style.css"', `href="${cssHref}"`);
+    html = html.replace('src="script.js"', `src="${jsHref}"`);
 
     // minify
     const minified = await minifyHtml(html, {
