@@ -502,11 +502,42 @@ function generateConversionCode(env) {
   return code.join("");
 }
 
-// width/height自動付与 + lazy loading + <picture>変換
-async function processImages(html, dimensions, basePath = "") {
+// SP画像のセットを取得
+async function findSpImages(dir) {
+  const spImages = new Set();
+
+  async function scan(currentDir) {
+    try {
+      const entries = await fs.readdir(currentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(currentDir, entry.name);
+        if (entry.isDirectory()) {
+          await scan(fullPath);
+        } else if (entry.isFile()) {
+          // -sp サフィックスを持つ画像を検出
+          if (/-sp\.(png|jpe?g)$/i.test(entry.name)) {
+            // PC画像名を計算（-spを除去）
+            const pcName = entry.name.replace(/-sp(\.(png|jpe?g))$/i, "$1");
+            const relativePath = path.relative(dir, path.join(currentDir, pcName));
+            spImages.add(relativePath);
+          }
+        }
+      }
+    } catch {
+      // ディレクトリが存在しない場合は無視
+    }
+  }
+
+  await scan(dir);
+  return spImages;
+}
+
+// width/height自動付与 + lazy loading + <picture>変換 + PC/SP出し分け
+async function processImages(html, dimensions, basePath = "", spImages = new Set()) {
   let imageIndex = 0;
   // BASE_PATHを正規化（末尾スラッシュを除去、先頭スラッシュを確保）
   const prefix = basePath ? basePath.replace(/\/$/, "") : "";
+  const warnings = [];
 
   // <img>タグを処理
   const imgRegex = /<img([^>]*)src=["']([^"']+)["']([^>]*)>/gi;
@@ -547,11 +578,37 @@ async function processImages(html, dimensions, basePath = "") {
       const imgPrefix = src.startsWith("/") || src.startsWith("http") ? "" : prefix ? `${prefix}/` : "";
       const srcWithPrefix = src.startsWith("/") || src.startsWith("http") ? src : `${imgPrefix}${src}`;
       const baseNameWithPrefix = src.startsWith("/") || src.startsWith("http") ? baseName : `${imgPrefix}${baseName}`;
-      return `<picture>
+
+      // SP画像があるかチェック
+      const relativeSrc = src.startsWith("/") ? src.slice(1) : src;
+      const hasSpImage = spImages.has(relativeSrc);
+
+      if (hasSpImage) {
+        // SP画像がある場合: PC/SP出し分け
+        const spBaseName = baseName.replace(/(\.(png|jpe?g))$/i, "") + "-sp";
+        const spBaseNameWithPrefix = src.startsWith("/") || src.startsWith("http")
+          ? spBaseName
+          : `${imgPrefix}${spBaseName}`;
+        const spSrcWithPrefix = src.startsWith("/") || src.startsWith("http")
+          ? `${spBaseName}${ext}`
+          : `${imgPrefix}${spBaseName}${ext}`;
+
+        return `<picture>
+  <source media="(max-width: 767px)" srcset="${spBaseNameWithPrefix}.avif" type="image/avif">
+  <source media="(max-width: 767px)" srcset="${spBaseNameWithPrefix}.webp" type="image/webp">
+  <source media="(max-width: 767px)" srcset="${spSrcWithPrefix}">
   <source srcset="${baseNameWithPrefix}.avif" type="image/avif">
   <source srcset="${baseNameWithPrefix}.webp" type="image/webp">
   <img${newBefore}src="${srcWithPrefix}"${newAfter}>
 </picture>`;
+      } else {
+        // SP画像がない場合: 通常のpicture要素
+        return `<picture>
+  <source srcset="${baseNameWithPrefix}.avif" type="image/avif">
+  <source srcset="${baseNameWithPrefix}.webp" type="image/webp">
+  <img${newBefore}src="${srcWithPrefix}"${newAfter}>
+</picture>`;
+      }
     }
 
     // 相対パスの場合はBASE_PATHを適用
@@ -562,7 +619,7 @@ async function processImages(html, dimensions, basePath = "") {
     return `<img${newBefore}src="${src}"${newAfter}>`;
   });
 
-  return html;
+  return { html, warnings };
 }
 
 // favicon生成
@@ -663,10 +720,17 @@ async function build() {
 
   // images/ をコピー
   const imagesDir = path.join(srcDir, "images");
+  let spImages = new Set();
   try {
     await fs.access(imagesDir);
     await copyDir(imagesDir, path.join(buildDir, "images"));
-    console.log("✓ Images copied");
+    // SP画像を検出
+    spImages = await findSpImages(srcDir);
+    if (spImages.size > 0) {
+      console.log(`✓ Images copied (${spImages.size} SP images detected)`);
+    } else {
+      console.log("✓ Images copied");
+    }
   } catch {
     console.log("  No images directory");
   }
@@ -708,8 +772,9 @@ async function build() {
       html = html.replace("</head>", `${structuredData}\n</head>`);
     }
 
-    // 画像処理（width/height、lazy loading、picture変換）
-    html = await processImages(html, dimensions, basePath);
+    // 画像処理（width/height、lazy loading、picture変換、PC/SP出し分け）
+    const imageResult = await processImages(html, dimensions, basePath, spImages);
+    html = imageResult.html;
 
     // CSS/JSリンクを更新（BASE_PATHを適用）
     const cssHref = basePath ? `${basePath}/style.min.css` : "style.min.css";

@@ -1,4 +1,4 @@
-# LP Template v2
+# LP Template v2.2.0
 
 シンプルなHTML/CSS/JSでランディングページを作成するためのテンプレート。
 
@@ -7,9 +7,11 @@
 | 項目 | v1 | v2 |
 |------|----|----|
 | フレームワーク | React + Tailwind | HTML/CSS/JS のみ |
-| 画像最適化 | なし | 自動リサイズ + AVIF/WebP |
+| 画像最適化 | なし | 自動リサイズ + 圧縮 + AVIF/WebP |
+| PC/SP画像 | 手動 | `-sp` サフィックスで自動出し分け |
 | width/height | 手動 | 自動付与 |
 | lazy loading | 手動 | 自動付与（1枚目除外） |
+| BASE_PATH | なし | サブディレクトリ対応 |
 | 構造化データ | なし | 5タイプ対応 |
 | favicon | 手動 | 自動生成 |
 | PageSpeed検証 | なし | API連携 |
@@ -45,6 +47,42 @@ src/
 
 <!-- ビルド後こうなる -->
 <picture>
+  <source srcset="images/hero.avif" type="image/avif">
+  <source srcset="images/hero.webp" type="image/webp">
+  <img src="images/hero.jpg" alt="メイン画像" width="1920" height="1080" loading="lazy">
+</picture>
+```
+
+#### 圧縮設定
+
+| 形式 | Quality | 備考 |
+|------|---------|------|
+| AVIF | 60 | 高圧縮・最優先 |
+| WebP | 80 | 中圧縮・フォールバック |
+| JPG | 85 | 元画像も圧縮 |
+| PNG | ロスレス | 透過画像用 |
+
+#### PC/SP画像の出し分け
+
+ブレイクポイント: **768px**
+
+`-sp` サフィックスでSP用画像を用意:
+
+```
+images/
+├── hero.jpg      # PC用（768px以上）
+├── hero-sp.jpg   # SP用（768px未満）
+```
+
+ビルド時に自動で出し分け:
+
+```html
+<picture>
+  <!-- SP用（768px未満） -->
+  <source media="(max-width: 767px)" srcset="images/hero-sp.avif" type="image/avif">
+  <source media="(max-width: 767px)" srcset="images/hero-sp.webp" type="image/webp">
+  <source media="(max-width: 767px)" srcset="images/hero-sp.jpg">
+  <!-- PC用（768px以上） -->
   <source srcset="images/hero.avif" type="image/avif">
   <source srcset="images/hero.webp" type="image/webp">
   <img src="images/hero.jpg" alt="メイン画像" width="1920" height="1080" loading="lazy">
@@ -92,6 +130,9 @@ cp .env.example .env
 ### .env 設定
 
 ```bash
+# ベースパス（サブディレクトリにデプロイする場合）
+BASE_PATH=/campaign
+
 # 広告タグ
 GA_MEASUREMENT_ID=G-XXXXXXXX
 GA_ADS_ID=AW-XXXXXXXX
@@ -110,6 +151,19 @@ OG_IMAGE_URL=https://example.com/og-image.jpg
 STRUCTURED_DATA_TYPE=Organization,FAQPage
 ```
 
+#### BASE_PATH について
+
+サブディレクトリにデプロイする場合に設定:
+
+```bash
+BASE_PATH=/campaign
+```
+
+以下のパスに自動適用:
+- favicon (`/campaign/favicon.ico`)
+- 画像 (`/campaign/images/hero.avif`)
+- CSS/JS (`/campaign/style.min.css`)
+
 ### ビルド
 
 ```bash
@@ -122,16 +176,19 @@ npm run build
 
 1. src/ → build/ コピー
 2. 画像リサイズ（1920px以下）
-3. AVIF/WebP 生成
-4. width/height 自動付与
-5. lazy loading 付与（1枚目除外）
-6. `<img>` → `<picture>` 変換
-7. OGP/metaタグ注入
-8. 広告タグ注入
-9. コンバージョン追跡コード注入
-10. 構造化データ(JSON-LD)生成
-11. favicon生成
-12. HTML/CSS/JS minify
+3. 元画像圧縮（JPG: 85, PNG: ロスレス）
+4. AVIF/WebP 生成（AVIF: 60, WebP: 80）
+5. PC/SP画像の出し分け（`-sp` サフィックス検出）
+6. width/height 自動付与
+7. lazy loading 付与（1枚目除外）
+8. `<img>` → `<picture>` 変換
+9. BASE_PATH 適用（favicon, 画像, CSS/JS）
+10. OGP/metaタグ注入
+11. 広告タグ注入
+12. コンバージョン追跡コード注入
+13. 構造化データ(JSON-LD)生成
+14. favicon生成
+15. HTML/CSS/JS minify
 
 ### 個別実行
 

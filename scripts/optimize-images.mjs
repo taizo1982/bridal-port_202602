@@ -67,15 +67,16 @@ async function needsUpdate(inputPath, outputPath) {
   }
 }
 
-// 画像を処理（リサイズ + 変換）
+// 画像を処理（リサイズ + 圧縮 + 変換）
 async function processImage(imagePath) {
   const dir = path.dirname(imagePath);
-  const ext = path.extname(imagePath);
-  const baseName = path.basename(imagePath, ext);
+  const ext = path.extname(imagePath).toLowerCase();
+  const baseName = path.basename(imagePath, path.extname(imagePath));
 
   let image = sharp(imagePath);
   const metadata = await image.metadata();
   let resized = false;
+  let compressed = false;
 
   // 1920pxより大きい場合はリサイズ
   if (metadata.width > MAX_WIDTH) {
@@ -84,11 +85,23 @@ async function processImage(imagePath) {
       fit: "inside",
     });
     resized = true;
-
-    // 元画像もリサイズして保存
-    const resizedBuffer = await image.clone().toBuffer();
-    await writeFile(imagePath, resizedBuffer);
     console.log(`  Resized: ${metadata.width}px → ${MAX_WIDTH}px`);
+  }
+
+  // 元画像を圧縮して保存（JPG: quality 85）
+  if (ext === ".jpg" || ext === ".jpeg") {
+    const compressedBuffer = await image.clone().jpeg({ quality: 85 }).toBuffer();
+    await writeFile(imagePath, compressedBuffer);
+    compressed = true;
+    if (!resized) {
+      console.log(`  Compressed: JPG (quality: 85)`);
+    }
+  } else if (ext === ".png") {
+    // PNGはリサイズ時のみ保存（ロスレス）
+    if (resized) {
+      const resizedBuffer = await image.clone().png().toBuffer();
+      await writeFile(imagePath, resizedBuffer);
+    }
   }
 
   // 変換対象
@@ -108,7 +121,7 @@ async function processImage(imagePath) {
   let converted = false;
 
   for (const target of targets) {
-    if (!resized && !(await needsUpdate(imagePath, target.output))) {
+    if (!resized && !compressed && !(await needsUpdate(imagePath, target.output))) {
       continue;
     }
 
@@ -126,7 +139,7 @@ async function processImage(imagePath) {
     converted = true;
   }
 
-  return { resized, converted };
+  return { resized, compressed, converted };
 }
 
 // 画像サイズ情報を取得（width/height自動付与用）
@@ -161,6 +174,7 @@ async function run() {
   console.log(`${allImages.length}個の画像を検出\n`);
 
   let resizedCount = 0;
+  let compressedCount = 0;
   let convertedCount = 0;
   const dimensions = {};
 
@@ -170,6 +184,7 @@ async function run() {
       const result = await processImage(imagePath);
 
       if (result.resized) resizedCount++;
+      if (result.compressed) compressedCount++;
       if (result.converted) convertedCount++;
 
       // 画像サイズを記録
@@ -182,6 +197,7 @@ async function run() {
 
   console.log(`\n完了!`);
   console.log(`  リサイズ: ${resizedCount}個`);
+  console.log(`  圧縮: ${compressedCount}個`);
   console.log(`  変換: ${convertedCount}個`);
 
   // 画像サイズ情報をJSONに保存（width/height自動付与用）
