@@ -1,0 +1,114 @@
+{
+  "src/bridal-port_fav.png": {
+    "width": 64,
+    "height": 64
+  },
+  "src/bridal-port_logo.png": {
+    "width": 530,
+    "height": 509
+  },
+  "src/bridalportmap.png": {
+    "width": 800,
+    "height": 640
+  },
+  "src/hiyoshi.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/hyozu.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/bridal-port_fav.png": {
+    "width": 64,
+    "height": 64
+  },
+  "src/images/bridal-port_logo.png": {
+    "width": 530,
+    "height": 509
+  },
+  "src/images/bridalportmap.png": {
+    "width": 800,
+    "height": 640
+  },
+  "src/images/favicon.png": {
+    "width": 64,
+    "height": 64
+  },
+  "src/images/hiyoshi.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/hyozu.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/logo.png": {
+    "width": 220,
+    "height": 38
+  },
+  "src/images/mikami.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/ogp.jpg": {
+    "width": 1200,
+    "height": 630
+  },
+  "src/images/ono.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/tachiki.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/takebe.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/images/top2.jpg": {
+    "width": 1920,
+    "height": 1072
+  },
+  "src/logo.png": {
+    "width": 220,
+    "height": 38
+  },
+  "src/mikami.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/ogp.jpg": {
+    "width": 1200,
+    "height": 630
+  },
+  "src/ogp.png": {
+    "width": 1200,
+    "height": 630
+  },
+  "src/ono.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/tachiki.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/takebe.jpg": {
+    "width": 1920,
+    "height": 1280
+  },
+  "src/top.png": {
+    "width": 1920,
+    "height": 1072
+  },
+  "src/top2.jpg": {
+    "width": 1920,
+    "height": 1072
+  },
+  "src/top2.png": {
+    "width": 1920,
+    "height": 1072
+  }
+}

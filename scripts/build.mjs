@@ -735,6 +735,30 @@ async function build() {
     console.log("  No images directory");
   }
 
+  // src/ 直下の画像ファイルをコピー
+  try {
+    const srcEntries = await fs.readdir(srcDir, { withFileTypes: true });
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".svg", ".ico"];
+    let copiedCount = 0;
+    for (const entry of srcEntries) {
+      if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (imageExtensions.includes(ext)) {
+          await fs.copyFile(
+            path.join(srcDir, entry.name),
+            path.join(buildDir, entry.name)
+          );
+          copiedCount++;
+        }
+      }
+    }
+    if (copiedCount > 0) {
+      console.log(`✓ ${copiedCount} image files copied from src/`);
+    }
+  } catch (error) {
+    console.log(`  Image copy from src/ failed: ${error.message}`);
+  }
+
   // Favicon生成
   let faviconTags = "";
   try {

@@ -1,5 +1,5 @@
 /**
- * LP Template - JavaScript
+ * お宮参りLP - ブライダル・ポート
  *
  * data-cv属性を持つ要素は自動でコンバージョン追跡されます
  * ビルド時にコンバージョンコードが自動挿入されます
@@ -15,9 +15,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const target = document.querySelector(href);
       if (target) {
         e.preventDefault();
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
+        const headerHeight = document.querySelector('.header')?.offsetHeight || 60;
+        const targetPosition = target.getBoundingClientRect().top + window.scrollY - headerHeight;
+
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
         });
       }
     });
@@ -36,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
           if (currentScrollY <= 50) {
             header.style.transform = 'translateY(0)';
-          } else if (currentScrollY > lastScrollY) {
+          } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
             header.style.transform = 'translateY(-100%)';
           } else {
             header.style.transform = 'translateY(0)';
@@ -50,30 +53,85 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // FAQアコーディオン（details要素を使用している場合は不要）
-  // カスタムアコーディオンが必要な場合はここに追加
+  // スクロールアニメーション（IntersectionObserver）
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px',
+    threshold: 0.1
+  };
 
-  // フォームバリデーション（フォームがある場合）
-  const forms = document.querySelectorAll('form[data-validate]');
-  forms.forEach(form => {
-    form.addEventListener('submit', function(e) {
-      let isValid = true;
-      const requiredFields = form.querySelectorAll('[required]');
-
-      requiredFields.forEach(field => {
-        if (!field.value.trim()) {
-          isValid = false;
-          field.classList.add('error');
-        } else {
-          field.classList.remove('error');
-        }
-      });
-
-      if (!isValid) {
-        e.preventDefault();
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
       }
     });
+  }, observerOptions);
+
+  // アニメーション対象要素を監視
+  document.querySelectorAll('.reason-card, .shrine-card, .flow-step, .pain-item, .solution-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
   });
+
+  // is-visibleクラスが付いたらアニメーション
+  const style = document.createElement('style');
+  style.textContent = `
+    .is-visible {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // 電話リンクのスマホ判定（PCではクリップボードにコピー）
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (!isMobile) {
+    document.querySelectorAll('a[href^="tel:"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const tel = this.getAttribute('href').replace('tel:', '');
+
+        // クリップボードにコピー
+        navigator.clipboard.writeText(tel).then(() => {
+          // 視覚的フィードバック
+          const originalText = this.textContent;
+          const originalBg = this.style.backgroundColor;
+          this.textContent = 'コピーしました!';
+          this.style.backgroundColor = '#4CAF50';
+          this.style.color = '#fff';
+          this.style.borderColor = '#4CAF50';
+
+          setTimeout(() => {
+            this.textContent = originalText;
+            this.style.backgroundColor = originalBg;
+            this.style.color = '';
+            this.style.borderColor = '';
+          }, 2000);
+        }).catch(() => {
+          // フォールバック: 選択状態にする
+          const range = document.createRange();
+          const tempSpan = document.createElement('span');
+          tempSpan.textContent = tel;
+          tempSpan.style.position = 'fixed';
+          tempSpan.style.top = '-9999px';
+          document.body.appendChild(tempSpan);
+          range.selectNode(tempSpan);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          document.body.removeChild(tempSpan);
+
+          this.textContent = 'コピーしました!';
+          setTimeout(() => {
+            this.textContent = tel;
+          }, 2000);
+        });
+      });
+    });
+  }
 });
 
 /**
