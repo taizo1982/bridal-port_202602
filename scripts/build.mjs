@@ -210,6 +210,18 @@ function generateAnalyticsTags(env) {
 </script>`);
   }
 
+  // Microsoft Clarity
+  if (env.CLARITY_PROJECT_ID) {
+    tags.push(`
+<!-- Microsoft Clarity -->
+<script>
+  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window,document,"clarity","script","${env.CLARITY_PROJECT_ID}");
+</script>`);
+  }
+
   return tags.join("\n");
 }
 
@@ -539,7 +551,14 @@ async function processImages(html, dimensions, basePath = "", spImages = new Set
   const prefix = basePath ? basePath.replace(/\/$/, "") : "";
   const warnings = [];
 
-  // <img>タグを処理
+  // 1. 既存の<picture>要素を保護（ネスト防止）
+  const pictureBlocks = [];
+  html = html.replace(/<picture[\s\S]*?<\/picture>/gi, (match) => {
+    pictureBlocks.push(match);
+    return `__PICTURE_PLACEHOLDER_${pictureBlocks.length - 1}__`;
+  });
+
+  // <img>タグを処理（既存の<picture>内の<img>は除外済み）
   const imgRegex = /<img([^>]*)src=["']([^"']+)["']([^>]*)>/gi;
 
   html = html.replace(imgRegex, (match, before, src, after) => {
@@ -617,6 +636,11 @@ async function processImages(html, dimensions, basePath = "", spImages = new Set
     }
 
     return `<img${newBefore}src="${src}"${newAfter}>`;
+  });
+
+  // 3. プレースホルダーを復元（既存の<picture>要素を元に戻す）
+  pictureBlocks.forEach((block, i) => {
+    html = html.replace(`__PICTURE_PLACEHOLDER_${i}__`, block);
   });
 
   return { html, warnings };
@@ -733,30 +757,6 @@ async function build() {
     }
   } catch {
     console.log("  No images directory");
-  }
-
-  // src/ 直下の画像ファイルをコピー
-  try {
-    const srcEntries = await fs.readdir(srcDir, { withFileTypes: true });
-    const imageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".svg", ".ico"];
-    let copiedCount = 0;
-    for (const entry of srcEntries) {
-      if (entry.isFile()) {
-        const ext = path.extname(entry.name).toLowerCase();
-        if (imageExtensions.includes(ext)) {
-          await fs.copyFile(
-            path.join(srcDir, entry.name),
-            path.join(buildDir, entry.name)
-          );
-          copiedCount++;
-        }
-      }
-    }
-    if (copiedCount > 0) {
-      console.log(`✓ ${copiedCount} image files copied from src/`);
-    }
-  } catch (error) {
-    console.log(`  Image copy from src/ failed: ${error.message}`);
   }
 
   // Favicon生成

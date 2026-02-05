@@ -1,6 +1,6 @@
 ---
 name: lp-ads
-description: 広告タグとコンバージョン設定。GA4、Google Ads、Meta Pixel、LINE Tag、Yahoo Tag対応。広告設定して、タグを入れて、と言われたら使用。
+description: 広告タグとコンバージョン設定。GA4、Google Ads、Meta Pixel、LINE Tag、Yahoo Tag、Microsoft Clarity対応。広告設定して、タグを入れて、と言われたら使用。
 allowed-tools: Read, Write, Edit
 ---
 
@@ -17,6 +17,7 @@ allowed-tools: Read, Write, Edit
 | Meta Pixel | META_PIXEL_ID | Meta Events Manager |
 | LINE Tag | LINE_TAG_ID | LINE Ads → タグ管理 |
 | Yahoo Tag | YAHOO_RETARGETING_ID, YAHOO_CONVERSION_ID | Yahoo広告 → ツール |
+| Microsoft Clarity | CLARITY_PROJECT_ID | Clarity → Settings → Overview |
 
 ## ヒアリング項目
 
@@ -26,6 +27,7 @@ allowed-tools: Read, Write, Edit
    - [ ] Meta (Facebook/Instagram)
    - [ ] LINE
    - [ ] Yahoo
+   - [ ] Microsoft Clarity
 
 2. **各プラットフォームのID**
    - 「管理画面のどこにありますか？」と聞かれたら場所を案内
@@ -56,6 +58,9 @@ LINE_TAG_ID=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
 YAHOO_RETARGETING_ID=XXXXXXXXXX
 YAHOO_CONVERSION_ID=XXXXXXXXXX
 YAHOO_CONVERSION_LABEL=XXXXXXXXXX
+
+# Microsoft Clarity
+CLARITY_PROJECT_ID=XXXXXXXXXX
 
 # トラッキング
 TRACK_SCROLL_DEPTH=true
